@@ -39,7 +39,7 @@ deploy:
   before_script:
     - cd terraform/sandbox
   script:
-    - terrform apply -out plan.json
+    - terrform apply plan.json
   when: manual
   only:
     - sandbox
@@ -82,7 +82,7 @@ deploy:
   before_script:
     - cd terraform/prod
   script:
-    - terrform apply -out plan.json
+    - terrform apply plan.json
   when: manual
   only:
     - prod
