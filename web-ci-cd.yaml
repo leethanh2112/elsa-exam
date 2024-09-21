@@ -1,0 +1,100 @@
+stages:
+  - build
+  - helm-package
+  - deploy
+
+### Deploy Sandbox Enviroment ###
+build:
+  stage: docker-build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  before_script:
+    - cd hackathon-starter
+  script:
+    - echo "{\"auths\":{\"$REGISTRY_URL\":{\"username\":\"$REGISTRY_USER\",\"password\":\"$REGISTRY_PASS\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --skip-tls-verify --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $REGISTRY_URL/$REGISTRY_PROJECT/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
+  only:
+    - sandbox
+  tags:
+    - sandbox-docker-runner
+
+helm-package:
+  stage: Helm Package Change
+  script:
+    - helm registry login https://${REGISTRY_URL} --username ${REGISTRY_USER} --password ${REGISTRY_PASS}
+    - helm package $CI_PROJECT_NAME/chart --version $CI_PIPELINE_ID
+    - helm push $CI_PROJECT_NAME-$CI_PIPELINE_ID.tgz oci://${REGISTRY_URL}/$REGISTRY_PROJECT
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "sandbox"'  # Run only on sandbox branch
+      changes:
+        - chart/**  # Run only if there are changes in the "chart" folder
+  tags:
+    - sandbox-shell-runner
+
+deploy:
+  stage: k8s-deploy
+  script:
+    - mkdir -p /home/gitlab-runner/.kube
+    - echo ${SANDBOX_KUBECONFIG} | base64 -d >> /home/gitlab-runner/.kube/config
+    - export KUBECONFIG=$KUBECONFIG:/home/gitlab-runner/.kube/config
+    - helm registry login https://${REGISTRY_URL} --username ${REGISTRY_USER} --password ${REGISTRY_PASS}
+    - helm upgrade
+      --install $CI_PROJECT_NAME oci://${REGISTRY_URL}/$REGISTRY_PROJECT/$CI_PROJECT_NAME
+      --version $CI_PIPELINE_ID
+      --namespace default
+      --values $CI_PROJECT_NAME/$CI_COMMIT_BRANCH.yml
+      --set image.repository=$REGISTRY_URL/$REGISTRY_PROJECT/$CI_PROJECT_NAME
+      --set image.tag=$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
+  only:
+    - sandbox
+  tags:
+    - sandbox-shell-runner
+
+### Deploy Production Enviroment ###
+build:
+  stage: docker-build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  before_script:
+    - cd hackathon-starter
+  script:
+    - echo "{\"auths\":{\"$REGISTRY_URL\":{\"username\":\"$REGISTRY_USER\",\"password\":\"$REGISTRY_PASS\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --skip-tls-verify --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $REGISTRY_URL/$REGISTRY_PROJECT/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
+  only:
+    - prod
+  tags:
+    - prod-docker-runner
+
+helm-package:
+  stage: Helm Package Change
+  script:
+    - helm registry login https://${REGISTRY_URL} --username ${REGISTRY_USER} --password ${REGISTRY_PASS}
+    - helm package $CI_PROJECT_NAME/chart --version $CI_PIPELINE_ID
+    - helm push $CI_PROJECT_NAME-$CI_PIPELINE_ID.tgz oci://${REGISTRY_URL}/$REGISTRY_PROJECT
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "prod"'  # Run only on prod branch
+      changes:
+        - chart/**  # Run only if there are changes in the "chart" folder
+  tags:
+    - prod-shell-runner
+
+deploy:
+  stage: k8s-deploy
+  script:
+    - mkdir -p /home/gitlab-runner/.kube
+    - echo ${SANDBOX_KUBECONFIG} | base64 -d >> /home/gitlab-runner/.kube/config
+    - export KUBECONFIG=$KUBECONFIG:/home/gitlab-runner/.kube/config
+    - helm registry login https://${REGISTRY_URL} --username ${REGISTRY_USER} --password ${REGISTRY_PASS}
+    - helm upgrade
+      --install $CI_PROJECT_NAME oci://${REGISTRY_URL}/$REGISTRY_PROJECT/$CI_PROJECT_NAME
+      --version $CI_PIPELINE_ID
+      --namespace default
+      --values $CI_PROJECT_NAME/$CI_COMMIT_BRANCH.yml
+      --set image.repository=$REGISTRY_URL/$REGISTRY_PROJECT/$CI_PROJECT_NAME
+      --set image.tag=$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
+  only:
+    - prod
+  tags:
+    - prod-shell-runner

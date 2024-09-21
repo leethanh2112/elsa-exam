@@ -1,0 +1,16 @@
+{{- if not (eq .Release.Namespace "beta") }} 
+{{- if and (not .Values.disableDeployment) (.Values.autoScale) -}}
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "app.fullname" . }}
+spec:
+  maxReplicas: {{ .Values.autoScale.max | default 4 }}
+  minReplicas: {{ .Values.autoScale.min | default 2 }}
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: {{ include "app.fullname" . }}
+  targetCPUUtilizationPercentage: {{ .Values.autoScale.cpu | default 50 }}
+{{- end }}
+{{- end }}

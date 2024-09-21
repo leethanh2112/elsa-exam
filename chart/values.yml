@@ -1,0 +1,45 @@
+name: api-exam
+lang: python
+replicaCount: 1
+prometheusEnabled: true
+image:
+  repository: https://registry.firegroup.com/api-exam
+  tag: latest
+  pullPolicy: IfNotPresent
+nameOverride: ""
+fullnameOverride: api-exam
+service:
+  type: ClusterIP
+  port: 5000
+  containerPort: 5000
+  targetPort: 5000
+env:
+  AWS_ACCESS_KEY_ID:
+    value: "x.x.x.x"
+  AWS_DEFAULT_REGION:
+    value: "x.x.x.x"
+  AWS_SECRET_ACCESS_KEY:
+    value: "x.x.x.x"
+ingress:
+  enabled: true
+  annotations: 
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: 50m
+  path: /
+  hosts:
+  - exam.firegroup.com
+  tls:
+  - hosts:
+    - exam.firegroup.com
+    secretName: ssl-cert  
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+dnsmasq_enable: false
+serviceAccountName: false
+istio:
+  enabled: false   
+
+  

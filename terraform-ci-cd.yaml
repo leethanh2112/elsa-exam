@@ -1,0 +1,90 @@
+stages:
+  - quality
+  - plan
+  - deploy
+
+### Deploy Sandbox Enviroment ###
+quality:
+  stage: terraform-quality
+  before_script:
+    - cd terraform
+  script:
+    - terraform fmt -recursive -check
+    - terraform init
+    - terraform validate
+    - tflint --config=$(pwd)/.tflint.hcl --recursive
+    - checkov --framework=terraform --download-external-modules=true --config-file .checkov.yaml -d .
+  only:
+    - sandbox
+  tags:
+    - sandbox-shell-runner
+
+plan:
+  stage: terraform-plan
+  before_script:
+    - cd terraform/sandbox
+  script:
+    - terrform plan -out plan.json
+  artifacts:
+    name: tf-plan-$CI_COMMIT_REF_NAME
+    paths:
+      - *.json
+  only:
+    - sandbox
+  tags:
+    - sandbox-shell-runner
+
+deploy:
+  stage: terraform-plan
+  before_script:
+    - cd terraform/sandbox
+  script:
+    - terrform apply -out plan.json
+  when: manual
+  only:
+    - sandbox
+  tags:
+    - sandbox-shell-runner
+
+### Deploy Production Enviroment ###
+quality:
+  stage: terraform-quality
+  before_script:
+    - cd terraform
+  script:
+    - terraform fmt -recursive -check
+    - terraform init
+    - terraform validate
+    - tflint --config=$(pwd)/.tflint.hcl --recursive
+    - checkov --framework=terraform --download-external-modules=true --config-file .checkov.yaml -d .
+  only:
+    - prod
+  tags:
+    - prod-shell-runner
+
+plan:
+  stage: terraform-plan
+  before_script:
+    - cd terraform/prod
+  script:
+    - terrform plan -out plan.json
+  artifacts:
+    name: tf-plan-$CI_COMMIT_REF_NAME
+    paths:
+      - *.json
+  only:
+    - prod
+  tags:
+    - prod-shell-runner
+
+deploy:
+  stage: terraform-plan
+  before_script:
+    - cd terraform/prod
+  script:
+    - terrform apply -out plan.json
+  when: manual
+  only:
+    - prod
+  tags:
+    - prod-shell-runner

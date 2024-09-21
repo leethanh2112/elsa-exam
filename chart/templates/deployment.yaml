@@ -1,0 +1,203 @@
+{{- if not .Values.disableDeployment -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    app: {{ include "app.name" . }}
+    chart: {{ include "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ include "app.replicas" . }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+{{ if .Values.daprEnabled }}      
+        dapr.io/enabled: "true"
+        dapr.io/app-id: {{ include "app.fullname" . }}
+        dapr.io/app-port: "80"
+        dapr.io/config: "tracing"
+{{- end }}       
+{{ if .Values.prometheusEnabled }}      
+        prometheus.io/scrape: "true"
+{{- end }}
+      labels:
+        app: {{ include "app.name" . }}
+        release: {{ .Release.Name }}
+        lang: {{ .Values.lang | default "nodejs" }}
+    spec:
+{{ if .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+{{- end }}
+      imagePullSecrets:
+        - name: gitlab-registry
+{{ if .Values.dnsmasq_enable }}
+      initContainers:
+      - name: init-myservice
+        image: busybox:1.28
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          sed 's/^nameserver.*/nameserver 127.0.0.1/g' /etc/resolv.conf > /share/resolv.conf
+        volumeMounts:
+        - mountPath: /share
+          name: share
+{{- end }}
+      containers:
+{{ if .Values.dnsmasq_enable }}
+        - name: dnsmasq
+          args:
+          - -v=2
+          - -logtostderr
+          - -restartDnsmasq=true
+          - --
+          - -k
+          - --min-cache-ttl={{ .Values.dnsmasq_ttl }}
+          - --cache-size=1000
+          - --log-facility=-
+          - --server=/cluster.local/127.0.0.1#53
+          - --server=/in-addr.arpa/127.0.0.1#53
+          - --server=/ip6.arpa/127.0.0.1#53
+          image: k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.13
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /healthcheck/dnsmasq
+              port: 10054
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          ports:
+          - containerPort: 53
+            name: dns
+            protocol: UDP
+          - containerPort: 53
+            name: dns-tcp
+            protocol: TCP
+          resources:
+            requests:
+              cpu: 150m
+              memory: 20Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        - name: sidecar
+          args:
+          - --v=2
+          - --logtostderr
+          - --probe=dnsmasq,127.0.0.1:53,kubernetes.default.svc.cluster.local,5,SRV
+          image: k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.13
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /metrics
+              port: 10054
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          ports:
+          - containerPort: 10054
+            name: metrics
+            protocol: TCP
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+{{- end }}
+        - name: {{ include "app.name" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - sh
+                - -c
+                - "sleep 10"
+          {{ if not .Values.no_healthcheck -}}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.containerPort | default 80 }}
+              protocol: TCP
+          {{- with .Values.service.containerGrpcPort }}
+            - name: grpc
+              containerPort: {{ . }}
+              protocol: TCP
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.health.live | default "/health" }}
+              port: http
+            timeoutSeconds: {{ .Values.health.liveTimeoutSeconds | default 1 }}
+            failureThreshold: {{ .Values.health.livefailureThreshold | default 3 }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.health.ready | default "/health" }}
+              port: http
+            timeoutSeconds: {{ .Values.health.readyTimeoutSeconds | default 1 }}
+            failureThreshold: {{ .Values.health.readyfailureThreshold | default 3 }}
+        {{ end }}
+          env:
+          - name: MAINTAINER
+            value: be.xyz
+          {{- if eq (kindOf .Values.env) "slice" }}
+{{ toYaml .Values.env | indent 10 }}
+          {{- else }}
+          {{- range $key, $val := .Values.env }}
+          - name: {{ $key -}}
+          {{- if eq (kindOf $val) "map" }}
+{{ $val | toYaml | indent 12 -}}
+          {{- else }}
+            value: {{ $val | quote }}
+          {{- end -}}
+          {{- end }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+{{- if .Values.dnsmasq_enable }}
+          - mountPath: /etc/resolv.conf
+            subPath: resolv.conf
+            name: share
+{{- end }}
+{{- if hasKey .Values "volumeMounts" }}
+{{ toYaml .Values.volumeMounts | indent 12 }}
+{{- end }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- end }}
+      volumes:
+{{ if .Values.dnsmasq_enable }}
+      - name: share
+        emptyDir: {}
+{{- end }}
+{{- if hasKey .Values "volumes" }}
+{{ toYaml .Values.volumes | indent 8 }}
+{{- end }}

@@ -1,0 +1,43 @@
+{{- range $i, $job := .Values.jobs -}}
+{{- if $i -}}
+---
+{{ end -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $.Values.name }}-{{ .name }}
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+      - name: asia-gcr-io
+      containers:
+      - name: {{ .name }}
+        image: {{ if .image }}{{ .image }}{{ else }}{{ $.Values.image.repository }}:{{ $.Values.image.tag }}{{ end }}
+        env:
+        - name: MAINTAINER
+          value: be.xyz
+        {{- if eq (kindOf $.Values.env) "slice" }}
+{{ toYaml $.Values.env | indent 10 }}
+        {{- else }}
+        {{- range $key, $val := $.Values.env }}
+        - name: {{ $key -}}
+        {{- if eq (kindOf $val) "map" }}
+{{ $val | toYaml | indent 12 -}}
+        {{- else }}
+          value: {{ $val | quote }}
+        {{- end -}}
+        {{- end }}
+        {{- end }}
+        resources:
+{{ toYaml $.Values.resources | indent 10 }}
+{{- if .command }}
+        command:
+{{ toYaml .command | indent 8 -}}
+{{- end -}}
+{{- if .args -}}
+        args:
+{{ toYaml .args | indent 10 -}}
+{{- end }}
+      restartPolicy: OnFailure
+{{ end }}
