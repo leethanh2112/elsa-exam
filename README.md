@@ -10,4 +10,10 @@
 - terraform_modules
 
 ## Terraform Pipeline:
-- Stage
+- Using the Gitlab-CI pipeline: terraform-ci-cd.yaml
+- stages:
+  - quality
+  - plan
+  - deploy
+
+  
