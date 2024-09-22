@@ -31,11 +31,19 @@
   - helm package
   - deploy
  
-# Domain
+# WebApp
+## Method
+Path /books
+- GET => Read
+- POST => Create
+- PUT => update
+- DELETE => delete
 ## Production
 https://webapp.prod.elsa.com
+https://webapp.prod.elsa.com/books
 ## Sandbox
 https://webapp.sandbox.elsa.com
+https://webapp.sandbox.elsa.com/books
 
 # Monitoring tools:
 - Grafana
