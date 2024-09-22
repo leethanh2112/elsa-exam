@@ -53,7 +53,7 @@ locals {
   target_group = {
     tg_ingress_nginx = {
       name        = "${local.resource_name}-ingress-nginx-tg"
-      port        = "30080"
+      port        = "32080"
       protocol    = "HTTP"
       target_type = "ip"
       health_check = {
