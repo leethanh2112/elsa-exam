@@ -11,7 +11,7 @@ fullnameOverride: elsa-exam
 service:
   type: ClusterIP
   port: 80
-  containerPort: 80
+  containerPort: 8080
   targetPort: 8080
 ingress:
   enabled: true
