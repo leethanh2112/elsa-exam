@@ -1,13 +1,13 @@
-name: elsa-exam
+name: webapp
 lang: nodejs
 replicaCount: 1
 prometheusEnabled: true
 image:
-  repository: https://registry.elsa.com/elsa-exam
+  repository: https://registry.elsa.com/webapp
   tag: latest
   pullPolicy: IfNotPresent
 nameOverride: ""
-fullnameOverride: elsa-exam
+fullnameOverride: webapp
 service:
   type: ClusterIP
   port: 80
@@ -21,7 +21,7 @@ ingress:
     nginx.ingress.kubernetes.io/proxy-body-size: 50m
   path: /
   hosts:
-  - sandbox.elsa.com
+  - webapp.sandbox.elsa.com
 resources: {}
 nodeSelector: {}
 tolerations: []
