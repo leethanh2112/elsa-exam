@@ -10,7 +10,7 @@ build:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   before_script:
-    - cd hackathon-starter
+    - cd webapp
   script:
     - echo "{\"auths\":{\"$REGISTRY_URL\":{\"username\":\"$REGISTRY_USER\",\"password\":\"$REGISTRY_PASS\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --skip-tls-verify --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $REGISTRY_URL/$REGISTRY_PROJECT/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
@@ -58,7 +58,7 @@ build:
     name: gcr.io/kaniko-project/executor:v1.23.2-debug
     entrypoint: [""]
   before_script:
-    - cd hackathon-starter
+    - cd webapp
   script:
     - echo "{\"auths\":{\"$REGISTRY_URL\":{\"username\":\"$REGISTRY_USER\",\"password\":\"$REGISTRY_PASS\"}}}" > /kaniko/.docker/config.json
     - /kaniko/executor --skip-tls-verify --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $REGISTRY_URL/$REGISTRY_PROJECT/$CI_PROJECT_NAME:$CI_COMMIT_REF_NAME-$CI_COMMIT_SHORT_SHA
