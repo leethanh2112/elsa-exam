@@ -28,16 +28,16 @@ resource "aws_security_group" "ec2" {
   }
 
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 32080
+    to_port     = 32080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow HTTP"
   }
 
   ingress {
-    from_port   = 443
-    to_port     = 443
+    from_port   = 32443
+    to_port     = 32443
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
     description = "Allow HTTPS"
