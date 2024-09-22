@@ -34,10 +34,8 @@
 # Domain
 ## Production
 https://webapp.prod.elsa.com
-https://grafana.prod.elsa.com
 ## Sandbox
 https://webapp.sandbox.elsa.com
-https://grafana.sandbox.elsa.com
 
 # Monitoring tools:
 - Grafana
