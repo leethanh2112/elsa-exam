@@ -337,6 +337,12 @@ module "tg_ingress_nginx" {
   vpc_id       = aws_vpc.this.id
 }
 
+resource "aws_lb_target_group_attachment" "tg_ingress_nginx_attachment" {
+  target_group_arn = module.tg_ingress_nginx.arn
+  target_id        = module.ec2.instance_id             
+  port             = "32080"                 
+}
+
 # ################################################################################
 # # ELB Listener Rules
 # ################################################################################
