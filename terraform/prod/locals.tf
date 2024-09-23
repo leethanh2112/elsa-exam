@@ -55,7 +55,7 @@ locals {
       name        = "${local.resource_name}-ingress-nginx-tg"
       port        = "32080"
       protocol    = "HTTP"
-      target_type = "ip"
+      target_type = "instance"
       health_check = {
         interval            = 30
         path                = "/health"
