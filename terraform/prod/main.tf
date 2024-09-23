@@ -2,7 +2,7 @@
 # VPC & Subnets
 ################################################################################
 resource "aws_vpc" "this" {
-  cidr_block           = "10.124.204.0/22"
+  cidr_block           = "10.112.204.0/22"
   enable_dns_hostnames = true
   #checkov:skip=CKV2_AWS_11: "Ensure VPC flow logging is enabled in all VPCs"
   #checkov:skip=CKV2_AWS_12: "Ensure the default security group of every VPC restricts all traffic"
@@ -14,7 +14,7 @@ resource "aws_vpc" "this" {
 
 resource "aws_subnet" "public-subnet1a" {
   vpc_id            = aws_vpc.this.id
-  cidr_block        = "10.124.204.0/24"
+  cidr_block        = "10.112.204.0/24"
   availability_zone = "us-east-1a"
   tags = {
     Name = "${local.resource_name}-public-subnet1a"
@@ -24,7 +24,7 @@ resource "aws_subnet" "public-subnet1a" {
 
 resource "aws_subnet" "public-subnet1b" {
   vpc_id            = aws_vpc.this.id
-  cidr_block        = "10.124.205.0/24"
+  cidr_block        = "10.112.205.0/24"
   availability_zone = "us-east-1b"
   tags = {
     Name = "${local.resource_name}-public-subnet1b"
@@ -34,7 +34,7 @@ resource "aws_subnet" "public-subnet1b" {
 
 resource "aws_subnet" "app-private-subnet1a" {
   vpc_id            = aws_vpc.this.id
-  cidr_block        = "10.124.206.0/24"
+  cidr_block        = "10.112.206.0/24"
   availability_zone = "us-east-1a"
   tags = {
     Name = "${local.resource_name}-app-private-subnet1a"
@@ -44,7 +44,7 @@ resource "aws_subnet" "app-private-subnet1a" {
 
 resource "aws_subnet" "app-private-subnet1b" {
   vpc_id            = aws_vpc.this.id
-  cidr_block        = "10.124.207.0/24"
+  cidr_block        = "10.112.207.0/24"
   availability_zone = "us-east-1b"
   tags = {
     Name = "${local.resource_name}-app-private-subnet1b"
