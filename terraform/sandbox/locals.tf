@@ -1,6 +1,6 @@
 locals {
   env        = "sandbox"
-  regionCode = "ue1" ## use-east-1
+  regionCode = "ue1" ## us-east-1
   name       = "poc"
 
   resource_name     = "${local.env}-${local.regionCode}-${local.name}"
